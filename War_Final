@@ -1,0 +1,246 @@
+from Tkinter import *
+import time
+import sys
+import random
+import Queue
+from random import shuffle
+
+deck = [(i+1) for i in range(52)]
+shuffle(deck)
+print deck
+
+## Global var
+TableSize = 400
+Comp_Cards = 26
+You_Cards = 26
+TurnCnt = 0
+is_current_tie_on = False
+Pic_file_path = 'C:\Python27\Jeff_home\Games\Pictures\Gif\\'
+list_Comp = []
+list_You = []
+list_CompTie = []
+list_YouTie = []
+
+file_list = ['gif_card_back.gif',
+             'gif_d_ace.gif', 'gif_d_two.gif', 'gif_d_three.gif', 'gif_d_four.gif', 'gif_d_five.gif', 'gif_d_six.gif','gif_d_seven.gif',
+             'gif_d_eight.gif','gif_d_nine.gif','gif_d_ten.gif','gif_d_jack.gif','gif_d_queen.gif','gif_d_king.gif',
+             
+             'gif_s_ace.gif', 'gif_s_two.gif', 'gif_s_three.gif', 'gif_s_four.gif', 'gif_s_five.gif', 'gif_s_six.gif','gif_s_seven.gif',
+             'gif_s_eight.gif','gif_s_nine.gif','gif_s_ten.gif','gif_s_jack.gif','gif_s_queen.gif','gif_s_king.gif',
+
+             'gif_h_ace.gif', 'gif_h_two.gif', 'gif_h_three.gif', 'gif_h_four.gif', 'gif_h_five.gif', 'gif_h_six.gif','gif_h_seven.gif',
+             'gif_h_eight.gif','gif_h_nine.gif','gif_h_ten.gif','gif_h_jack.gif','gif_h_queen.gif','gif_h_king.gif',             
+
+             'gif_c_ace.gif', 'gif_c_two.gif', 'gif_c_three.gif', 'gif_c_four.gif', 'gif_c_five.gif', 'gif_c_six.gif','gif_c_seven.gif',
+             'gif_c_eight.gif','gif_c_nine.gif','gif_c_ten.gif','gif_c_jack.gif','gif_c_queen.gif','gif_c_king.gif',        
+             ] 
+
+## Main
+
+root = Tk()
+board = Canvas(root, width=TableSize, height=TableSize)
+board.configure(background = '#26C913')
+root.configure(background = 'blue')
+board.create_line(0, TableSize/2, TableSize, TableSize/2)
+
+#cards
+board.create_rectangle(150, 30, 250, 155, fill="#891C38", outline = 'black')
+board.create_rectangle(150, 240, 250, 365, fill = "#891C38",outline="black")
+
+t_Comp = board.create_text(200, 90, text = ':(', font = ('Arial', 60))
+t_You = board.create_text(200, 300, text = ':)', font = ('Arial', 60))
+t_Result = board.create_text(200, TableSize/2, text = "GOOD LUCK!", font = ('Arial', 40))
+eYouCards = Entry(root)
+eCompCards = Entry(root)
+eTurns = Entry(root)
+
+you_image = PhotoImage(file=(Pic_file_path + file_list[48]) )
+comp_image = PhotoImage(file=(Pic_file_path + file_list[26]) )
+t_You = board.create_image(165,255, anchor = NW, image=comp_image)
+t_Comp = board.create_image(165,42, anchor = NW, image=you_image)
+
+# Main Algorithm
+def Flipclick():
+    global list_Comp, list_You, list_CompTie, list_YouTie
+    global t_Comp, t_You, t_Result, tIE_Comp, tIE_You
+    global Comp_Cards, You_Cards
+    global eYouCards,eCompCards
+    global you_image, comp_image, you_tie_image, comp_tie_image
+    global FlipCard
+    global TableSize, is_current_tie_on
+    global TurnCnt
+
+    #diable button at first, wait finish
+    FlipCard.config(state="disabled")
+    
+    board.delete(t_Comp)
+    board.delete(t_You)
+    
+    #before get from, always check if empty
+    if not list_You:
+        print "done, you list is empty, You lose"
+        board.delete(t_Result)
+        t_Result = board.create_text(200, TableSize/2, text = "GAME OVER! YOU LOSE!", font = ('Arial', 60))
+        board.update()
+        sys.exit()
+        
+    if not list_Comp:
+        print "done, comp list is empty, you win"
+        board.delete(t_Result)
+        t_Result = board.create_text(200, TableSize/2, text = "GAME OVER! YOU WIN!", font = ('Arial', 60))
+        board.update()
+        sys.exit()
+
+    temp_You = list_You.pop(0)
+    temp_Comp = list_Comp.pop(0)
+    TurnCnt = TurnCnt+1
+    print "Turn :", TurnCnt, " Comp_len=", len(list_Comp), " You_len=", len(list_You)
+    print "Turn :", TurnCnt, " Comp=", temp_Comp, " You=", temp_You
+
+    you_image = PhotoImage(file=(Pic_file_path + file_list[temp_You]) )
+    t_You = board.create_image(165,255, anchor = NW, image=you_image)
+    comp_image = PhotoImage(file=(Pic_file_path + file_list[temp_Comp]) )
+    t_Comp = board.create_image(165,42, anchor = NW, image=comp_image)
+    
+    #comparison
+    board.delete(t_Result)
+
+    # get card with face val
+    face_You = temp_You % 13
+    if face_You == 0:
+        face_You = 13
+    face_Comp = temp_Comp % 13
+    if face_Comp == 0:
+        face_Comp = 13    
+    print "Turn :", TurnCnt, " Comp Face=", face_Comp, " You Face=", face_You
+
+    # Step 1: compare w/o tie-break        
+    if face_You > face_Comp:
+        list_You.append(temp_Comp)
+        list_You.append(temp_You)
+        if is_current_tie_on == False:                    
+            t_Result = board.create_text(200, TableSize/2, text = "YOU WIN!", font = ('Arial', 40))
+        else:
+            list_You = list_You + list_CompTie + list_YouTie
+            t_Result = board.create_text(200, TableSize/2, text = "YOU WIN BIG!", font = ('Arial', 40))
+            board.delete(tIE_Comp)
+            board.delete(tIE_You)
+            list_YouTie = []
+            list_CompTie = []
+            is_current_tie_on = False
+        
+    if face_You < face_Comp:
+        list_Comp.append(temp_Comp)
+        list_Comp.append(temp_You)        
+        if is_current_tie_on == False:                    
+            t_Result = board.create_text(200, TableSize/2, text = "COMP WIN!", font = ('Arial', 40))
+        else:
+            list_Comp = list_Comp + list_YouTie + list_CompTie           
+            t_Result = board.create_text(200, TableSize/2, text = "COMP WIN BIG!", font = ('Arial', 40))
+            board.delete(tIE_Comp)
+            board.delete(tIE_You)
+            list_YouTie = []
+            list_CompTie = []            
+            is_current_tie_on = False
+
+    # Step 2: check tie, and break tie.
+    if face_You == face_Comp:
+        t_Result = board.create_text(200, TableSize/2, text = "TIE!", font = ('Arial', 40))
+        is_current_tie_on = True
+
+        # Put table_open_card in temp list first
+        list_CompTie.append(temp_Comp)
+        # draw three more cards if possible
+        num_list_Comp = len(list_Comp)
+        print "num_list_Comp=", num_list_Comp        
+        if num_list_Comp > 3:
+            list_CompTie.append(list_Comp.pop(0))
+            list_CompTie.append(list_Comp.pop(0))
+            list_CompTie.append(list_Comp.pop(0))
+        elif num_list_Comp == 3:
+            list_CompTie.append(list_Comp.pop(0))
+            list_CompTie.append(list_Comp.pop(0))            
+        elif num_list_Comp == 2:
+            list_CompTie.append(list_Comp.pop(0))
+            
+        comp_tie_image = PhotoImage(file=(Pic_file_path + file_list[0]) )
+        tIE_Comp = board.create_image(165+50,42+10, anchor = NW, image=comp_tie_image)
+
+        # Put table_open_card in temp list first
+        list_YouTie.append(temp_You)
+        
+        num_list_You = len(list_You)
+        print "num_list_You=", num_list_You
+        if num_list_You > 3:
+            list_YouTie.append(list_You.pop(0))
+            list_YouTie.append(list_You.pop(0))
+            list_YouTie.append(list_You.pop(0))
+        elif num_list_You == 3:
+            list_YouTie.append(list_You.pop(0))
+            list_YouTie.append(list_You.pop(0))            
+        elif num_list_You == 2:
+            list_YouTie.append(list_You.pop(0))
+            
+        you_tie_image = PhotoImage(file=(Pic_file_path + file_list[0]) )
+        tIE_You = board.create_image(165+50,255+10, anchor = NW, image=you_tie_image)
+
+        print "list_YouTieLen=", len(list_YouTie), " list_CompTieLen", len(list_CompTie)
+               
+    # update card number result
+    eYouCards.delete(0, END)
+    eCompCards.delete(0, END)    
+    eYouCards.insert(0, "You have: " + str(len(list_You)) + " cards")
+    eCompCards.insert(0, "Comp has: " + str(len(list_Comp)) + " cards")
+    eTurns.delete(0, END)
+    eTurns.insert(0, "Turns: " + str(TurnCnt))
+    eYouCards.update()
+    eCompCards.update()
+
+    #Check one more time after update
+    #if tie break is on, leave to next round
+    if is_current_tie_on == False:
+        if not list_You:
+            print "done, you list is empty, You lose"
+            board.delete(t_Result)
+            t_Result = board.create_text(200, TableSize/2, text = "GAME OVER! YOU LOSE!", font = ('Arial', 60))
+            board.update()
+            sys.exit()
+            
+        if not list_Comp:
+            print "done, comp list is empty, you win"
+            board.delete(t_Result)
+            t_Result = board.create_text(200, TableSize/2, text = "GAME OVER! YOU WIN!", font = ('Arial', 60))
+            board.update()
+            sys.exit()        
+
+    #enable back the button
+    time.sleep(0.5)
+    FlipCard.config(state="normal")
+    
+#flipbutton, add command later
+FlipCard = Button(root, text = "Flip Card", command = Flipclick)
+FlipCard.pack()
+
+#create gameboard
+eCompCards.grid(row = 25, column = 20)
+eCompCards.pack()
+eCompCards.insert(0, "Comp has: " + str(Comp_Cards) + " cards")
+board.pack()
+eYouCards.grid(row = 25, column = 20)
+eYouCards.pack()
+eYouCards.insert(0, "You have: " + str(You_Cards) + " cards")
+eTurns.grid(row = 25, column = 20)
+eTurns.pack()
+eTurns.insert(0, "Turns: " + str(TurnCnt))
+
+#create plyer_holding_card_list
+for i in range(0, Comp_Cards):
+    list_Comp.append(deck[i])
+for i in range(Comp_Cards, You_Cards+Comp_Cards):
+    list_You.append(deck[i])
+
+print "List_Comp: ", list_Comp
+print "List_You: ", list_You
+
+#Start playing portion
+root.mainloop()
